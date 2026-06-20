@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>老郦家</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E8913A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="老郦家">
+<style>
+:root{--bg-primary:#F9F6F0;--bg-card:#FFFFFF;--text-primary:#3D3226;--text-secondary:#6B5E4E;--text-muted:#A89880;--border-color:#E8DFD0;--color-warm:#E8913A;--color-warm-bg:#FFF3E6;--color-warm-light:#F5C898;--color-pink:#E874A5;--color-pink-light:#FDE8F2;--color-blue:#7B9EBD;--color-blue-light:#E8F0F6;--color-green:#7CB97C;--color-red:#D94545;--shadow-sm:0 1px 3px rgba(0,0,0,.05);--shadow-md:0 4px 12px rgba(0,0,0,.08);--radius-sm:8px;--radius-md:14px;--font-sans:'-apple-system','PingFang SC','Microsoft YaHei',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-height:100vh;-webkit-tap-highlight-color:transparent}
+.header{background:var(--bg-card);border-bottom:1px solid var(--border-color);position:sticky;top:0;z-index:100}
+.header-inner{max-width:900px;margin:0 auto;padding:0 16px;display:flex;align-items:center;height:50px;gap:16px}
+.logo{display:flex;align-items:center;gap:6px}
+.logo-icon{font-size:20px}.logo-text{font-size:16px;font-weight:700;letter-spacing:2px}
+.nav-tabs{display:flex;gap:2px;flex:1}
+.nav-tab{padding:5px 12px;border:none;border-radius:7px;background:transparent;color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-sans)}
+.nav-tab:hover{background:var(--bg-primary)}.nav-tab.active{background:var(--color-warm);color:#FFF}
+.header-address{font-size:11px;color:var(--text-muted)}
+.main-content{max-width:900px;margin:0 auto;padding:16px}
+.tab-content{display:none}.tab-content.active{display:block}
+.welcome-banner{background:linear-gradient(135deg,#FDE8D0,#FFF3E6);border-radius:var(--radius-md);padding:16px 20px;margin-bottom:14px}
+.welcome-text h2{font-size:18px;font-weight:700;margin-bottom:2px}
+.welcome-text p{font-size:12px;color:var(--text-secondary)}
+.section{margin-bottom:16px}
+.section-title{font-size:14px;font-weight:600;margin-bottom:8px}
+.member-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.member-card{background:var(--bg-card);border-radius:var(--radius-sm);padding:12px 14px;box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:10px;border:1px solid var(--border-color)}
+.member-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;color:#FFF;flex-shrink:0}
+.member-info h4{font-size:13px;font-weight:600}.member-info .meta{font-size:11px;color:var(--text-muted)}
+.member-role{display:inline-block;font-size:10px;padding:1px 6px;border-radius:7px;font-weight:500;margin-top:2px}
+.role-家主{background:var(--color-warm-bg);color:var(--color-warm)}
+.role-副家主{background:var(--color-pink-light);color:var(--color-pink)}
+.role-成员{background:var(--color-blue-light);color:var(--color-blue)}
+.todo-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-card);border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);margin-bottom:6px;border:1px solid var(--border-color)}
+.todo-item.done{opacity:.5}
+.todo-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border-color);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--color-green);flex-shrink:0}
+.todo-check.checked{background:var(--color-green);border-color:var(--color-green);color:#FFF}
+.todo-category{font-size:16px;flex-shrink:0;width:24px;text-align:center}
+.todo-info{flex:1;min-width:0}.todo-info .title{font-size:13px;font-weight:500}.todo-info .desc{font-size:11px;color:var(--text-muted)}
+.todo-time{font-size:11px;color:var(--text-muted);padding:2px 8px;background:var(--bg-primary);border-radius:8px;flex-shrink:0}
+.cat-status-card{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cat-stat-item{display:flex;align-items:center;gap:10px;background:var(--bg-card);border-radius:var(--radius-sm);padding:12px 14px;box-shadow:var(--shadow-sm);border:1px solid var(--border-color)}
+.cat-stat-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.cat-stat-icon.normal{background:var(--color-blue-light)}
+.cat-stat-icon.urgent{background:#FDE8D0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.cat-stat-info h4{font-size:12px;font-weight:600}.cat-stat-info p{font-size:11px;color:var(--text-muted)}
+.anniversary-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.anniversary-card{background:var(--bg-card);border-radius:var(--radius-sm);padding:12px 14px;box-shadow:var(--shadow-sm);border:1px solid var(--border-color);display:flex;align-items:center;gap:10px}
+.anniversary-card.today{border-color:var(--color-warm);background:linear-gradient(135deg,#FFF3E6,#FDE8D0)}
+.anniversary-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:#FFF;flex-shrink:0}
+.anniversary-info h4{font-size:12px;font-weight:600}.anniversary-info .date-label{font-size:11px;color:var(--text-muted)}
+.anniversary-countdown{font-size:11px;font-weight:600;margin-left:auto;padding:3px 10px;border-radius:10px;white-space:nowrap}
+.countdown-today{background:var(--color-warm);color:#FFF}
+.countdown-week{background:var(--color-warm-bg);color:var(--color-warm)}
+.countdown-month{background:var(--bg-primary);color:var(--text-muted)}
+.schedule-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.filter-chips{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;padding-bottom:4px}
+.chip{padding:5px 14px;border-radius:14px;border:1px solid var(--border-color);background:var(--bg-card);font-size:12px;cursor:pointer;white-space:nowrap;font-family:var(--font-sans);transition:all .15s}
+.chip.active{background:var(--color-warm);color:#FFF;border-color:var(--color-warm)}
+.schedule-group{margin-bottom:12px}
+.schedule-date-header{font-size:12px;color:var(--text-muted);margin-bottom:6px;padding-left:2px}
+.schedule-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg-card);border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);margin-bottom:4px;border:1px solid var(--border-color);flex-wrap:wrap}
+.schedule-item.completed{opacity:.5}
+.schedule-item .item-icon{font-size:14px;flex-shrink:0;width:20px;text-align:center}
+.schedule-item .item-info{flex:1;min-width:80px}
+.schedule-item .item-title{font-size:12px;font-weight:500}.schedule-item .item-desc{font-size:11px;color:var(--text-muted)}
+.item-badge{font-size:10px;padding:2px 8px;border-radius:8px;flex-shrink:0}
+.badge-travel{background:#E8F0F6;color:#5A86AD}.badge-pet{background:#E8F5E8;color:#6BA86B}
+.badge-intimacy{background:#FDE8F2;color:#D4729A}.badge-family{background:#FFF0DB;color:#D4892A}
+.badge-custom{background:#EDE0D4;color:#8B7355}
+.item-actions{display:flex;gap:4px;flex-shrink:0}
+.completed-section{margin-top:16px;border-top:2px dashed var(--border-color);padding-top:12px}
+.completed-toggle{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--border-color);cursor:pointer;font-size:13px;color:var(--text-secondary);font-weight:500}
+.toggle-arrow{transition:transform .2s;font-size:11px}
+.completed-toggle.open .toggle-arrow{transform:rotate(180deg)}
+.completed-list{display:none;margin-top:6px}.completed-list.show{display:flex;flex-direction:column;gap:4px}
+.rules-title{font-size:24px;font-weight:700;text-align:center;margin-bottom:4px}
+.rules-subtitle{font-size:13px;color:var(--text-muted);text-align:center;margin-bottom:16px}
+.rules-actions{display:flex;gap:8px;margin-bottom:14px}
+.rule-card{background:var(--bg-card);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow-sm);margin-bottom:8px;border:1px solid var(--border-color)}
+.rule-card-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.rule-number{width:24px;height:24px;border-radius:50%;background:var(--color-warm);color:#FFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.rule-card-header h4{font-size:13px;font-weight:600}
+.rule-content{font-size:13px;color:var(--text-secondary);padding-left:34px;line-height:1.7}
+.rule-actions-row{display:flex;gap:6px;margin-top:8px;padding-left:34px}
+.messages-header{text-align:center;margin-bottom:16px}
+.messages-title{font-size:22px;font-weight:700}.messages-subtitle{font-size:12px;color:var(--text-muted);margin-top:4px}
+.message-composer{background:var(--bg-card);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow-sm);border:1px solid var(--border-color);margin-bottom:14px}
+.composer-hint{font-size:11px;color:var(--text-muted);margin-bottom:8px}
+.message-composer textarea{width:100%;padding:10px 12px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font-sans);resize:vertical;margin-bottom:8px}
+.message-composer textarea:focus{outline:none;border-color:var(--color-warm)}
+.messages-list{display:flex;flex-direction:column;gap:10px}
+.message-card{background:var(--bg-card);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow-sm);border:1px solid var(--border-color)}
+.message-meta{font-size:11px;color:var(--text-muted);margin-bottom:6px}
+.message-content{font-size:14px;line-height:1.7;margin-bottom:10px;white-space:pre-wrap}
+.message-replies{background:var(--bg-primary);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px}
+.reply-item{padding:6px 0;border-bottom:1px solid var(--border-color)}
+.reply-item:last-child{border-bottom:none}.reply-meta{font-size:10px;color:var(--text-muted)}.reply-content{font-size:12px;color:var(--text-secondary);white-space:pre-wrap}
+.reply-input-row{display:flex;gap:6px}
+.reply-input-row input{flex:1;padding:6px 10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:12px;font-family:var(--font-sans)}
+.reply-input-row input:focus{outline:none;border-color:var(--color-warm)}
+.photos-header{text-align:center;margin-bottom:14px}
+.photos-title{font-size:22px;font-weight:700}.photos-subtitle{font-size:12px;color:var(--text-muted)}
+.photo-uploader{background:var(--bg-card);border-radius:var(--radius-sm);padding:12px 14px;box-shadow:var(--shadow-sm);border:1px solid var(--border-color);margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.upload-btn{background:var(--color-warm);color:#FFF;padding:6px 14px;border-radius:7px;font-size:13px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.upload-btn:hover{background:#D47A2A}
+.photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.photo-card{background:var(--bg-card);border-radius:var(--radius-sm);overflow:hidden;box-shadow:var(--shadow-sm);border:1px solid var(--border-color);position:relative}
+.photo-card img{width:100%;aspect-ratio:1;object-fit:cover;cursor:pointer;display:block}
+.photo-card-footer{padding:8px 10px}
+.photo-tag{font-size:10px;padding:1px 6px;border-radius:6px;background:var(--bg-primary);color:var(--text-secondary)}.photo-date{font-size:10px;color:var(--text-muted);margin-left:6px}.photo-caption{font-size:11px;color:var(--text-secondary);margin-top:3px}
+.photo-delete{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.4);color:#FFF;border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.photo-card:hover .photo-delete{opacity:1}
+.lightbox-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:300;align-items:center;justify-content:center;flex-direction:column}
+.lightbox-overlay.show{display:flex}.lightbox-overlay img{max-width:90vw;max-height:80vh;border-radius:8px;object-fit:contain}.lightbox-close{position:absolute;top:16px;right:20px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);color:#FFF;border:none;font-size:24px;cursor:pointer}.lightbox-info{color:rgba(255,255,255,.7);font-size:13px;margin-top:12px}
+.empty-state{text-align:center;padding:30px;color:var(--text-muted);font-size:13px}
+.btn{padding:8px 16px;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--font-sans);transition:all .15s}
+.btn-primary{background:var(--color-warm);color:#FFF}.btn-primary:hover{background:#D47A2A}
+.btn-outline{border:1px solid var(--border-color);background:var(--bg-card);color:var(--text-secondary)}.btn-outline:hover{border-color:var(--color-warm)}
+.btn-danger{background:transparent;color:var(--color-red);border:none}.btn-danger:hover{background:#FDEDED}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(50,40,30,.9);color:#FFF;padding:8px 20px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .3s;z-index:500;pointer-events:none}.toast.show{opacity:1}
+@media(max-width:768px){.header-address{display:none}.member-cards{grid-template-columns:repeat(2,1fr)}.cat-status-card{grid-template-columns:1fr}.photos-grid{grid-template-columns:repeat(2,1fr)}.anniversary-list{grid-template-columns:1fr}.rules-actions{flex-direction:column}.rules-actions .btn{width:100%}}
+@media(max-width:480px){.member-cards{grid-template-columns:1fr}.nav-tab{font-size:11px;padding:4px 8px}}
+</style>
+</head>
+<body>
+<div id="appMain">
+
+<header class="header"><div class="header-inner">
+<div class="logo"><span class="logo-icon">🏠</span><span class="logo-text">老郦家</span></div>
+<nav class="nav-tabs" id="navTabs">
+<button class="nav-tab active" data-tab="dashboard">首页</button>
+<button class="nav-tab" data-tab="schedule">日程</button>
+<button class="nav-tab" data-tab="rules">家规</button>
+<button class="nav-tab" data-tab="messages">留言</button>
+<button class="nav-tab" data-tab="photos">相册</button>
+</nav>
+<span class="header-address">誉天下123-3-302</span>
+</div></header>
+
+<main class="main-content">
+
+<!-- Dashboard -->
+<section class="tab-content active" id="tab-dashboard">
+<div class="welcome-banner"><div class="welcome-text"><h2 id="greetingText">晚上好，老郦家</h2><p id="todayDate"></p></div></div>
+<div class="section"><h3 class="section-title">家庭成员</h3><div class="member-cards" id="memberCards"><div class="empty-state">加载中...</div></div></div>
+<div class="section"><h3 class="section-title">今日待办</h3><div class="todo-list" id="todayTodos"><div class="empty-state">加载中...</div></div></div>
+<div class="section"><h3 class="section-title">猫咪状态</h3><div class="cat-status-card" id="catStatus"><div class="empty-state">加载中...</div></div></div>
+<div class="section"><h3 class="section-title">纪念日</h3><div class="anniversary-list" id="anniversaryList"><div class="empty-state">加载中...</div></div></div>
+</section>
+
+<!-- Schedule -->
+<section class="tab-content" id="tab-schedule">
+<div class="schedule-toolbar">
+<div class="filter-chips" id="filterChips">
+<button class="chip active" data-filter="all">全部</button>
+<button class="chip" data-filter="travel">出行</button>
+<button class="chip" data-filter="pet">猫咪</button>
+<button class="chip" data-filter="intimacy">亲密</button>
+<button class="chip" data-filter="family">家庭</button>
+<button class="chip" data-filter="custom">自定义</button>
+</div>
+<button class="btn btn-primary" onclick="Schedules.showAdd()">+ 添加</button>
+</div>
+<div id="scheduleList"><div class="empty-state">加载中...</div></div>
+</section>
+
+<!-- Rules -->
+<section class="tab-content" id="tab-rules">
+<div class="rules-title">郦家家规</div>
+<div class="rules-subtitle">一切讲客观道理，互相尊重</div>
+<div class="rules-actions"><button class="btn btn-primary" onclick="Rules.showAdd()">+ 新增条规</button></div>
+<div id="rulesList"><div class="empty-state">加载中...</div></div>
+</section>
+
+<!-- Messages -->
+<section class="tab-content" id="tab-messages">
+<div class="messages-header"><h2 class="messages-title">家庭留言板</h2><p class="messages-subtitle">匿名发言，畅所欲言</p></div>
+<div class="message-composer">
+<div class="composer-hint">匿名模式</div>
+<textarea id="msgContent" rows="2" placeholder="想说点什么..."></textarea>
+<button class="btn btn-primary" onclick="Messages.post()">匿名发送</button></div>
+<div class="messages-list" id="messagesList"><div class="empty-state">加载中...</div></div>
+</section>
+
+<!-- Photos -->
+<section class="tab-content" id="tab-photos">
+<div class="photos-header"><h2 class="photos-title">家庭相册</h2><p class="photos-subtitle">记录每一个美好瞬间</p></div>
+<div class="photo-uploader">
+<label class="upload-btn" for="photoInput">上传照片</label>
+<input type="file" id="photoInput" accept="image/*" multiple onchange="Photos.handleFiles(this)" style="display:none">
+<select id="photoTag" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:7px;font-size:12px;font-family:var(--font-sans)"><option value="family">家庭</option><option value="cat">猫咪</option><option value="member">成员</option></select>
+<input type="text" id="photoCaption" placeholder="描述" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:7px;font-size:12px;font-family:var(--font-sans);width:100px">
+<button class="btn btn-primary" onclick="Photos.save()">保存</button>
+</div>
+<div class="photos-grid" id="photosGrid"><div class="empty-state">加载中...</div></div>
+<div class="lightbox-overlay" id="lightbox" onclick="Photos.closeLightbox()">
+<button class="lightbox-close">&times;</button><img id="lightboxImg" src=""><div class="lightbox-info" id="lightboxInfo"></div>
+</div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ============ Storage ============
+const LS = {
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){localStorage.setItem(k,JSON.stringify(v))},
+};
+
+// ============ Initial Data ============
+function initData(){
+  if(!LS.get('laoli_family',null)) LS.set('laoli_family',{
+    name:'老郦家',address:'北京顺义区誉天下123号楼3单元302',
+    members:[
+      {id:'liyun',name:'郦赟',role:'正家主',gender:'男',age:32,type:'human',color:'#E8913A',birthday:'07-04'},
+      {id:'chensijing',name:'陈思婧',role:'副家主',gender:'女',age:31,type:'human',color:'#E874A5',birthday:'08-22'},
+      {id:'lumi',name:'LUMI',role:'成员',gender:'母',age:7,type:'cat',color:'#7B9EBD',birthday:'07-20'},
+      {id:'didi',name:'弟弟',role:'成员',gender:'公',age:6,type:'cat',color:'#8BA888',birthday:'08-23'}
+    ]});
+  if(!LS.get('laoli_schedules',null)) LS.set('laoli_schedules',{completed:[],custom:[]});
+  if(!LS.get('laoli_rules',null)) LS.set('laoli_rules',[
+    {id:'r1',title:'互相尊重原则',content:'家庭成员之间应相互尊重，不得使用侮辱性语言或人身攻击。即使有分歧，也要心平气和地沟通。'},
+    {id:'r2',title:'家务分工公平',content:'家务活应按照各自时间和能力合理分配，不推诿、不抱怨。正家主负责统筹，副家主负责监督执行。'},
+    {id:'r3',title:'财务管理透明',content:'家庭重大支出（超过1000元）需双方同意。日常消费各自独立，每月整理一次家庭账目。'},
+    {id:'r4',title:'猫咪养护责任',content:'LUMI和弟弟是家庭成员，冻干每2天一次，水和猫粮每3天检查一次。谁下班早谁先喂。'},
+    {id:'r5',title:'手机使用规范',content:'吃饭时不看手机；睡前一小时尽量不看；重要时刻（纪念日、家庭活动）手机静音。'},
+    {id:'r6',title:'矛盾处理机制',content:'产生矛盾时，先冷静10分钟，再以"事实+感受+建议"的方式沟通。不翻旧账，不冷战过夜。'},
+    {id:'r7',title:'健康第一',content:'双方互相督促体检、锻炼、规律作息。生病要及时就医，不许硬扛。'},
+    {id:'r8',title:'定期家庭会议',content:'每月第一个周末召开家庭会议，回顾过去一个月，讨论待改进事项，规划下月安排。'}
+  ]);
+  if(!LS.get('laoli_messages',null)) LS.set('laoli_messages',[]);
+  if(!LS.get('laoli_photos',null)) LS.set('laoli_photos',[]);
+}
+
+// ============ Scheduler ============
+function isWeekend(date){const d=date.getDay();return d===0||d===6;}
+function dateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r}
+function todayStr(){const d=new Date();return dateStr(d)}
+function todayDate(){const d=new Date();d.setHours(0,0,0,0);return d}
+
+function getHolidays(year){
+  // 2026 Chinese holidays (simplified)
+  const h={
+    '2026-01-01':1,'2026-01-02':1,'2026-01-03':1, // New Year
+    '2026-02-16':1,'2026-02-17':1,'2026-02-18':1,'2026-02-19':1,'2026-02-20':1,'2026-02-21':1,'2026-02-22':1, // Spring Festival
+    '2026-04-04':1,'2026-04-05':1,'2026-04-06':1, // Qingming
+    '2026-05-01':1,'2026-05-02':1,'2026-05-03':1,'2026-05-04':1,'2026-05-05':1, // Labor Day
+    '2026-06-01':1,'2026-06-02':1,'2026-06-03':1, // Dragon Boat
+    '2026-09-24':1,'2026-09-25':1,'2026-09-26':1, // Mid-Autumn
+    '2026-10-01':1,'2026-10-02':1,'2026-10-03':1,'2026-10-04':1,'2026-10-05':1,'2026-10-06':1,'2026-10-07':1,'2026-10-08':1, // National Day
+  };
+  const makeup={'2026-02-14':1,'2026-02-28':1,'2026-04-25':1,'2026-09-19':1};
+  return {holidays:h,makeupDays:makeup};
+}
+
+function isHoliday(dateStr){return !!getHolidays(2026).holidays[dateStr]}
+
+function adjustForHoliday(date,isReturn){
+  // isReturn=true: return to BJ (Fri), isReturn=false: return to WX (Sun)
+  // If holiday, shift to last working day before holiday for return to BJ,
+  // and first working day after holiday for return to WX
+  const d=new Date(date);
+  const yr=d.getFullYear();
+  const h=getHolidays(yr);
+  const ds=dateStr(d);
+  if(!h.holidays[ds]&&!h.makeupDays[ds]) return d; // not affected
+
+  // Simple adjustment: find nearest non-holiday working day
+  let cur=new Date(d);
+  for(let i=0;i<14;i++){
+    cur=addDays(cur,1);
+    const s=dateStr(cur);
+    if(!h.holidays[s]&&!isWeekend(cur)) return cur;
+    if(h.makeupDays[s]) return cur;
+  }
+  return d;
+}
+
+function generateSchedules(){
+  const stored=LS.get('laoli_schedules',{completed:[],custom:[]});
+  const today=todayDate();
+  const end=addDays(today,7);
+  const holidays=getHolidays(2026);
+  const schedules=[];
+  const completionSet=new Set(stored.completed.map(c=>c.id));
+
+  const lastFed=new Date(2026,5,20); // Jun 20
+  const lastWater=new Date(2026,5,19); // Jun 19
+
+  // Flights: every Fri BJ, every Sun WX
+  let cur=new Date(today);
+  cur.setDate(cur.getDate()-1); // start from yesterday to catch today
+  while(cur<=end){
+    const dow=cur.getDay();
+    const ds=dateStr(cur);
+    let isMakeup=holidays.makeupDays[ds];
+
+    // Friday flight WX -> BJ
+    if(dow===5||(isMakeup&&!isWeekend(cur)&&!isHoliday(ds))){
+      // Check if holiday-adjusted
+      schedules.push({id:'flight-to-bj-'+ds,title:'郦赟回京（无锡→北京）',date:ds,time:'morning',category:'travel',person:'郦赟',description:'每周五航班',auto:true});
+      // Ticket reminder 30 days before
+      const ticketDate=addDays(new Date(cur),-30);
+      const ticketDS=dateStr(ticketDate);
+      // Only add if within range
+      const todayRef=todayDate();
+      const ticketD=new Date(ticketDate);
+      if(ticketD>=todayRef&&ticketD<=end){
+        schedules.push({id:'ticket-bj-'+ds,title:'购票提醒：郦赟回京',date:ticketDS,time:'morning',category:'travel',person:'郦赟',description:'提前30天购票',auto:true});
+      }
+    }
+
+    // Sunday flight BJ -> WX
+    if(dow===0||(isMakeup&&!isWeekend(cur)&&!isHoliday(ds))){
+      schedules.push({id:'flight-to-wx-'+ds,title:'郦赟返锡（北京→无锡）',date:ds,time:'evening',category:'travel',person:'郦赟',description:'每周日航班',auto:true});
+    }
+
+    // Daily kiss
+    schedules.push({id:'kiss-'+ds,title:'睡前亲亲陈思婧',date:ds,time:'bedtime',category:'intimacy',person:'郦赟',description:'每日必修课',auto:true});
+
+    cur=addDays(cur,1);
+  }
+
+  // Cat feeding (every 2 days from Jun 20)
+  cur=new Date(lastFed);
+  while(cur<=end){
+    const ds=dateStr(cur);
+    if(cur>=today){
+      schedules.push({id:'feed-fdry-'+ds,title:'给 LUMI 和弟弟投喂冻干',date:ds,time:'evening',category:'pet',person:'',description:'每2天一次',auto:true});
+    }
+    cur=addDays(cur,2);
+  }
+
+  // Water check (every 3 days from Jun 19)
+  cur=new Date(lastWater);
+  while(cur<=end){
+    const ds=dateStr(cur);
+    if(cur>=today){
+      schedules.push({id:'water-check-'+ds,title:'检查水和猫粮是否充足',date:ds,time:'evening',category:'pet',person:'',description:'每3天一次',auto:true});
+    }
+    cur=addDays(cur,3);
+  }
+
+  // Add completed status
+  schedules.forEach(s=>{s.completed=completionSet.has(s.id);s.autoGenerated=s.auto;});
+
+  // Add custom schedules
+  const customSchedules=(stored.custom||[]).filter(s=>{
+    const sd=new Date(s.date+'T00:00:00+08:00');
+    return sd>=addDays(today,-1)&&sd<=end;
+  });
+  customSchedules.forEach(s=>{s.completed=completionSet.has(s.id);s.autoGenerated=false;});
+
+  return [...schedules,...customSchedules];
+}
+
+function getCatStatus(){
+  const today=todayDate();
+  const lastFed=new Date(2026,5,20);
+  const lastWater=new Date(2026,5,19);
+  const daysSinceFed=Math.floor((today-lastFed)/(1000*60*60*24));
+  const daysSinceWater=Math.floor((today-lastWater)/(1000*60*60*24));
+  const nextFed=dateStr(addDays(lastFed,Math.ceil((daysSinceFed+1)/2)*2));
+  const nextWater=dateStr(addDays(lastWater,Math.ceil((daysSinceWater+1)/3)*3));
+  return {lastFedFreezeDry:'2026-06-20',daysSinceFed,nextFed,lastRefillWater:'2026-06-19',daysSinceWater,nextWaterCheck:nextWater};
+}
+
+function getAnniversaries(){
+  const family=LS.get('laoli_family');
+  const now=new Date();
+  const yr=now.getFullYear();
+  return family.members.filter(m=>m.birthday).map(m=>{
+    const[bM,bD]=m.birthday.split('-').map(Number);
+    let bDate=new Date(yr,bM-1,bD);
+    if(bDate<now) bDate=new Date(yr+1,bM-1,bD);
+    const daysUntil=Math.ceil((bDate-now)/(1000*60*60*24));
+    const nextAge=daysUntil>365?m.age:m.age+1; // simplified
+    return {memberId:m.id,name:m.name,birthday:m.birthday,
+      date:dateStr(bDate),daysUntil,nextAge,emoji:m.type==='cat'?'🐱':(m.name==='郦赟'?'👨':'👩'),color:m.color};
+  }).sort((a,b)=>a.daysUntil-b.daysUntil);
+}
+
+// ============ Dashboard ============
+const Dashboard={
+  render(){
+    this.renderGreeting();
+    this.renderMembers();
+    this.renderToday();
+    this.renderCatStatus();
+    this.renderAnniversaries();
+  },
+  renderGreeting(){
+    const h=new Date().getHours();
+    let g='早上好';if(h>=12&&h<18)g='下午好';else if(h>=18||h<5)g='晚上好';
+    document.getElementById('greetingText').textContent=g+'，老郦家';
+    const wds=['日','一','二','三','四','五','六'];
+    const now=new Date();
+    document.getElementById('todayDate').textContent=now.getFullYear()+'年'+(now.getMonth()+1)+'月'+now.getDate()+'日 星期'+wds[now.getDay()];
+  },
+  renderMembers(){
+    const f=LS.get('laoli_family');
+    const em={郦赟:'👨',陈思婧:'👩',LUMI:'🐱',弟弟:'🐱'};
+    const rc={正家主:'role-家主',副家主:'role-副家主',成员:'role-成员'};
+    document.getElementById('memberCards').innerHTML=f.members.map(m=>
+      '<div class="member-card"><div class="member-avatar" style="background:'+m.color+'">'+(em[m.name]||'?')+'</div>'+
+      '<div class="member-info"><h4>'+m.name+'</h4><div class="meta">'+m.gender+' · '+m.age+'岁</div>'+
+      '<span class="member-role '+(rc[m.role]||'')+'">'+m.role+'</span></div></div>').join('');
+  },
+  renderToday(){
+    const all=generateSchedules();
+    const today=todayStr();
+    const items=all.filter(s=>s.date===today);
+    const el=document.getElementById('todayTodos');
+    if(!items.length){el.innerHTML='<div class="empty-state">今天没有待办</div>';return}
+    const catEmoji={travel:'✈',pet:'🐱',intimacy:'♥',family:'◆',custom:'○'};
+    const timeLabel={morning:'上午',afternoon:'下午',evening:'晚上',bedtime:'睡前'};
+    el.innerHTML=items.map(s=>{
+      const done=s.completed?' done':'',chk=s.completed?' checked':'';
+      return '<div class="todo-item'+done+'" data-sid="'+s.id+'">'+
+        '<div class="todo-check'+chk+'" onclick="Dashboard.toggleTodo(\''+s.id+'\',this)" title="'+(s.completed?'取消完成':'标记完成')+'">'+(s.completed?'✓':'')+'</div>'+
+        '<div class="todo-category">'+(catEmoji[s.category]||'●')+'</div>'+
+        '<div class="todo-info"><div class="title">'+s.title+'</div><div class="desc">'+(s.description||'')+'</div></div>'+
+        '<div class="todo-time">'+(timeLabel[s.time]||'')+'</div></div>';
+    }).join('');
+  },
+  toggleTodo(id,el){
+    const stored=LS.get('laoli_schedules');
+    const done=el.classList.contains('checked');
+    if(done){stored.completed=stored.completed.filter(c=>c.id!==id)}
+    else{stored.completed.push({id:id,date:todayStr()})}
+    LS.set('laoli_schedules',stored);
+    this.renderToday();
+    this.render(); // re-render all
+    App.showToast(done?'已恢复':'已完成');
+  },
+  renderCatStatus(){
+    const c=getCatStatus();
+    const fU=c.daysSinceFed>=2,wU=c.daysSinceWater>=3;
+    document.getElementById('catStatus').innerHTML=
+      '<div class="cat-stat-item"><div class="cat-stat-icon '+(fU?'urgent':'normal')+'">🍖</div>'+
+      '<div class="cat-stat-info"><h4>冻干喂食</h4><p>上次：'+c.lastFedFreezeDry+'（'+c.daysSinceFed+'天前）· '+(fU?'今天该喂了！':'下次：'+c.nextFed)+'</p></div></div>'+
+      '<div class="cat-stat-item"><div class="cat-stat-icon '+(wU?'urgent':'normal')+'">💧</div>'+
+      '<div class="cat-stat-info"><h4>水 & 猫粮检查</h4><p>上次加满：'+c.lastRefillWater+'（'+c.daysSinceWater+'天前）· '+(wU?'今天该检查！':'下次：'+c.nextWaterCheck)+'</p></div></div>';
+  },
+  renderAnniversaries(){
+    const ann=getAnniversaries();
+    const el=document.getElementById('anniversaryList');
+    if(!ann.length){el.innerHTML='<div class="empty-state">暂无</div>';return}
+    el.innerHTML=ann.map(a=>{
+      let cc='',cs='',ct='';
+      if(a.daysUntil===0){cc='today';cs='countdown-today';ct='🎉 今天！'}
+      else if(a.daysUntil<=7){cc='soon';cs='countdown-week';ct=a.daysUntil+'天后'}
+      else if(a.daysUntil<=30){cs='countdown-week';ct=a.daysUntil+'天后'}
+      else{cs='countdown-month';ct=a.daysUntil+'天后'}
+      const dp=a.date.split('-');
+      return '<div class="anniversary-card '+cc+'"><div class="anniversary-avatar" style="background:'+a.color+'">'+(a.emoji||'🎂')+'</div>'+
+        '<div class="anniversary-info"><h4>'+a.name+' · '+a.nextAge+'岁生日</h4><div class="date-label">'+parseInt(dp[1])+'月'+parseInt(dp[2])+'日</div></div>'+
+        '<span class="anniversary-countdown '+cs+'">'+ct+'</span></div>';
+    }).join('');
+  }
+};
+
+// ============ Schedules ============
+const Schedules={
+  filter:'all',
+  render(){
+    const all=generateSchedules();
+    let filtered=all;if(this.filter!=='all')filtered=all.filter(s=>s.category===this.filter);
+    const pending=filtered.filter(s=>!s.completed),completed=filtered.filter(s=>s.completed);
+    const groups={};pending.forEach(s=>{if(!groups[s.date])groups[s.date]=[];groups[s.date].push(s)});
+    const sortedDates=Object.keys(groups).sort();
+    const container=document.getElementById('scheduleList');
+    if(!sortedDates.length&&!completed.length){container.innerHTML='<div class="empty-state">没有日程</div>';return}
+
+    const wds=['日','一','二','三','四','五','六'];
+    const timeLabel={morning:'上午',afternoon:'下午',evening:'晚上',bedtime:'睡前'};
+    const ce={travel:'✈',pet:'🐱',intimacy:'♥',family:'◆',custom:'○'};
+    const bc={travel:'badge-travel',pet:'badge-pet',intimacy:'badge-intimacy',family:'badge-family',custom:'badge-custom'};
+    const bl={travel:'出行',pet:'猫咪',intimacy:'亲密',family:'家庭',custom:'自定义'};
+
+    const renderItem=s=>{
+      const done=s.completed?' completed':'',chk=s.completed?' checked':'';
+      return '<div class="schedule-item'+done+'"><div class="todo-check'+chk+'" onclick="Schedules.toggleComplete(\''+s.id+'\')" title="'+(s.completed?'取消':'完成')+'">'+(s.completed?'✓':'')+'</div>'+
+        '<div class="item-icon">'+(ce[s.category]||'●')+'</div>'+
+        '<div class="item-info"><div class="item-title">'+s.title+'</div><div class="item-desc">'+(s.person||'')+((s.description?' · '+s.description:''))+'</div></div>'+
+        '<span class="item-badge '+(bc[s.category]||'badge-custom')+'">'+(bl[s.category]||'日程')+'</span>'+
+        '<span class="todo-time">'+(timeLabel[s.time]||'')+'</span>'+
+        '<div class="item-actions"><button class="btn btn-outline" onclick="Schedules.editItem(\''+s.id+'\')" style="font-size:11px;padding:3px 8px">编辑</button>'+
+        (!s.autoGenerated?'<button class="btn btn-danger" onclick="Schedules.deleteItem(\''+s.id+'\')" style="font-size:11px;padding:3px 6px">删</button>':'')+'</div></div>';
+    };
+
+    let html=sortedDates.map(date=>{
+      const d=new Date(date+'T00:00:00+08:00');
+      const isToday=d.getTime()===todayDate().getTime();
+      return '<div class="schedule-group"><div class="schedule-date-header">'+date+' 星期'+wds[d.getDay()]+(isToday?' · 今天':'')+'</div>'+groups[date].map(renderItem).join('')+'</div>';
+    }).join('');
+
+    if(completed.length){
+      html+='<div class="completed-section"><div class="completed-toggle" onclick="this.classList.toggle(\'open\');this.nextElementSibling.classList.toggle(\'show\')"><span>已完成 ('+completed.length+')</span><span class="toggle-arrow">▼</span></div><div class="completed-list">'+completed.map(renderItem).join('')+'</div></div>';
+    }
+    container.innerHTML=html;
+  },
+  toggleComplete(id){
+    const stored=LS.get('laoli_schedules');
+    const idx=stored.completed.findIndex(c=>c.id===id);
+    if(idx>=0){stored.completed.splice(idx,1)}else{stored.completed.push({id:id,date:todayStr()})}
+    LS.set('laoli_schedules',stored);this.render();App.showToast(idx>=0?'已恢复':'已完成');
+  },
+  showAdd(){this.editingId=null;document.getElementById('addScheduleForm').style.display='block';},
+  editItem(id){
+    this.editingId=id;const all=generateSchedules();const s=all.find(s=>s.id===id);if(!s)return;
+    document.getElementById('schTitle').value=s.title||'';document.getElementById('schDate').value=s.date||'';
+    document.getElementById('schCategory').value=s.category||'custom';document.getElementById('schDesc').value=s.description||'';
+    document.getElementById('addScheduleForm').style.display='block';
+  },
+  saveItem(){
+    const title=document.getElementById('schTitle').value.trim(),date=document.getElementById('schDate').value,category=document.getElementById('schCategory').value,desc=document.getElementById('schDesc').value.trim();
+    if(!title||!date){App.showToast('请填标题和日期');return}
+    const stored=LS.get('laoli_schedules');
+    if(this.editingId){
+      const idx=stored.custom.findIndex(s=>s.id===this.editingId);
+      if(idx>=0){stored.custom[idx].title=title;stored.custom[idx].date=date;stored.custom[idx].category=category;stored.custom[idx].description=desc}
+    }else{
+      stored.custom.push({id:'sch-'+Date.now(),title,date,time:'evening',category,description:desc,autoGenerated:false});
+    }
+    LS.set('laoli_schedules',stored);
+    document.getElementById('addScheduleForm').style.display='none';this.render();App.showToast('已保存');
+  },
+  deleteItem(id){
+    const stored=LS.get('laoli_schedules');
+    stored.custom=stored.custom.filter(s=>s.id!==id);stored.completed=stored.completed.filter(c=>c.id!==id);
+    LS.set('laoli_schedules',stored);this.render();App.showToast('已删除');
+  }
+};
+
+// ============ Rules ============
+const Rules={
+  render(){
+    const rules=LS.get('laoli_rules',[]);
+    document.getElementById('rulesList').innerHTML=rules.length?rules.map((r,i)=>
+      '<div class="rule-card"><div class="rule-card-header"><div class="rule-number">'+(i+1)+'</div><h4>'+r.title+'</h4></div>'+
+      '<div class="rule-content">'+r.content+'</div>'+
+      '<div class="rule-actions-row"><button class="btn btn-outline" onclick="Rules.editRule(\''+r.id+'\')" style="font-size:11px">编辑</button>'+
+      '<button class="btn btn-danger" onclick="Rules.deleteRule(\''+r.id+'\')" style="font-size:11px">删除</button></div></div>').join(''):'<div class="empty-state">暂无家规</div>';
+  },
+  showAdd(){this.editingId=null;document.getElementById('ruleForm').style.display='block';document.getElementById('ruleTitle').value='';document.getElementById('ruleContent').value='';},
+  editRule(id){
+    this.editingId=id;const rules=LS.get('laoli_rules');const r=rules.find(r=>r.id===id);if(!r)return;
+    document.getElementById('ruleTitle').value=r.title;document.getElementById('ruleContent').value=r.content;document.getElementById('ruleForm').style.display='block';
+  },
+  saveRule(){
+    const title=document.getElementById('ruleTitle').value.trim(),content=document.getElementById('ruleContent').value.trim();
+    if(!title||!content){App.showToast('请填写完整');return}
+    const rules=LS.get('laoli_rules');
+    if(this.editingId){const idx=rules.findIndex(r=>r.id===this.editingId);if(idx>=0){rules[idx].title=title;rules[idx].content=content}}
+    else{rules.push({id:'r-'+Date.now(),title,content})}
+    LS.set('laoli_rules',rules);document.getElementById('ruleForm').style.display='none';this.render();App.showToast('已保存');
+  },
+  deleteRule(id){
+    let rules=LS.get('laoli_rules');rules=rules.filter(r=>r.id!==id);LS.set('laoli_rules',rules);this.render();App.showToast('已删除');
+  }
+};
+
+// ============ Messages ============
+const Messages={
+  render(){
+    const msgs=LS.get('laoli_messages',[]);
+    msgs.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    document.getElementById('messagesList').innerHTML=msgs.length?msgs.map(m=>
+      '<div class="message-card"><div class="message-meta">匿名 · '+new Date(m.createdAt).toLocaleDateString('zh-CN')+'</div>'+
+      '<div class="message-content">'+m.content+'</div>'+
+      (m.replies&&m.replies.length?'<div class="message-replies">'+m.replies.map(r=>
+        '<div class="reply-item"><div class="reply-meta">回复 · '+new Date(r.createdAt).toLocaleDateString('zh-CN')+'</div><div class="reply-content">'+r.content+'</div></div>').join('')+'</div>':'')+
+      '<div class="reply-input-row"><input type="text" id="reply-'+m.id+'" placeholder="回复..."><button class="btn btn-outline" onclick="Messages.reply(\''+m.id+'\')" style="font-size:11px;padding:4px 10px">回复</button></div></div>').join(''):'<div class="empty-state">还没有留言，来发第一条吧</div>';
+  },
+  post(){
+    const content=document.getElementById('msgContent').value.trim();if(!content){App.showToast('请输入内容');return}
+    const msgs=LS.get('laoli_messages',[]);
+    msgs.push({id:'msg-'+Date.now(),content,createdAt:new Date().toISOString(),replies:[]});
+    LS.set('laoli_messages',msgs);document.getElementById('msgContent').value='';this.render();App.showToast('已发送');
+  },
+  reply(msgId){
+    const input=document.getElementById('reply-'+msgId);const content=input.value.trim();if(!content){App.showToast('请输入回复');return}
+    const msgs=LS.get('laoli_messages');const msg=msgs.find(m=>m.id===msgId);if(!msg)return;
+    msg.replies.push({id:'reply-'+Date.now(),content,createdAt:new Date().toISOString()});
+    LS.set('laoli_messages',msgs);this.render();App.showToast('已回复');
+  }
+};
+
+// ============ Photos ============
+const Photos={
+  pendingFiles:[],
+  handleFiles(input){this.pendingFiles=Array.from(input.files);App.showToast('已选 '+this.pendingFiles.length+' 张');},
+  save(){
+    const files=this.pendingFiles;if(!files.length){App.showToast('请先选照片');return}
+    const tag=document.getElementById('photoTag').value,caption=document.getElementById('photoCaption').value.trim();
+    let done=0;const photos=LS.get('laoli_photos',[]);
+    const processNext=()=>{
+      if(done>=files.length){LS.set('laoli_photos',photos);this.render();App.showToast('已上传 '+done+' 张');this.pendingFiles=[];document.getElementById('photoInput').value='';document.getElementById('photoCaption').value='';return}
+      const reader=new FileReader();
+      reader.onload=()=>{
+        photos.push({id:'photo-'+Date.now()+'-'+done,data:reader.result,tag,caption,createdAt:new Date().toISOString()});
+        done++;processNext();
+      };
+      reader.readAsDataURL(files[done]);
+    };
+    processNext();
+  },
+  render(){
+    const photos=LS.get('laoli_photos',[]);
+    photos.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    const tagLabels={family:'家庭',cat:'猫咪',member:'成员'};
+    document.getElementById('photosGrid').innerHTML=photos.length?photos.map(p=>{
+      const t=new Date(p.createdAt);
+      return '<div class="photo-card"><img src="'+p.data+'" onclick="Photos.openLightbox(\''+p.data+'\',\''+(p.caption||'').replace(/'/g,'\\\'')+'\',\''+(t.getMonth()+1)+'月'+t.getDate()+'日\',\''+(tagLabels[p.tag]||'')+'\')" loading="lazy">'+
+        '<div class="photo-card-footer"><span class="photo-tag">'+(tagLabels[p.tag]||'')+'</span><span class="photo-date">'+(t.getMonth()+1)+'月'+t.getDate()+'日</span>'+(p.caption?'<div class="photo-caption">'+p.caption+'</div>':'')+'</div>'+
+        '<button class="photo-delete" onclick="event.stopPropagation();Photos.deletePhoto(\''+p.id+'\')">×</button></div>';
+    }).join(''):'<div class="empty-state">还没有照片</div>';
+  },
+  openLightbox(src,caption,date,tag){
+    document.getElementById('lightbox').classList.add('show');
+    document.getElementById('lightboxImg').src=src;
+    document.getElementById('lightboxInfo').textContent=(tag||'')+' · '+(date||'')+(caption?' · '+caption:'');
+  },
+  closeLightbox(){document.getElementById('lightbox').classList.remove('show')},
+  deletePhoto(id){
+    let photos=LS.get('laoli_photos');photos=photos.filter(p=>p.id!==id);LS.set('laoli_photos',photos);this.render();App.showToast('已删除');
+  }
+};
+
+// ============ App Controller ============
+const App={
+  showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000)},
+  switchTab(tab){
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id==='tab-'+tab));
+    try{
+      if(tab==='dashboard')Dashboard.render();else if(tab==='schedule')Schedules.render();
+      else if(tab==='rules')Rules.render();else if(tab==='messages')Messages.render();else if(tab==='photos')Photos.render();
+    }catch(e){console.error(e)}
+  },
+  init(){
+    document.querySelectorAll('.nav-tab').forEach(t=>t.addEventListener('click',()=>this.switchTab(t.dataset.tab)));
+    document.querySelectorAll('.filter-chips .chip').forEach(c=>{c.addEventListener('click',()=>{document.querySelectorAll('.filter-chips .chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');Schedules.filter=c.dataset.filter;Schedules.render()})});
+    this.switchTab('dashboard');
+  }
+};
+
+// ============ Init ============
+initData();
+document.addEventListener('DOMContentLoaded',()=>App.init());
+</script>
+
+<!-- Hidden modal forms (shown by JS) -->
+<div id="addScheduleForm" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-card);border-radius:var(--radius-md);padding:20px;box-shadow:var(--shadow-md);z-index:200;width:90%;max-width:360px">
+<div style="font-weight:600;margin-bottom:12px">日程</div>
+<div style="margin-bottom:8px"><input id="schTitle" placeholder="标题" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;font-family:var(--font-sans)"></div>
+<div style="display:flex;gap:8px;margin-bottom:8px"><input type="date" id="schDate" style="flex:1;padding:8px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;font-family:var(--font-sans)"><select id="schCategory" style="padding:8px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;font-family:var(--font-sans)"><option value="custom">自定义</option><option value="travel">出行</option><option value="pet">猫咪</option><option value="intimacy">亲密</option><option value="family">家庭</option></select></div>
+<div style="margin-bottom:10px"><input id="schDesc" placeholder="描述（可选）" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;font-family:var(--font-sans)"></div>
+<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="Schedules.saveItem()" style="flex:1">保存</button><button class="btn btn-outline" onclick="document.getElementById('addScheduleForm').style.display='none'" style="flex:1">取消</button></div></div>
+
+<div id="ruleForm" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-card);border-radius:var(--radius-md);padding:20px;box-shadow:var(--shadow-md);z-index:200;width:90%;max-width:360px">
+<div style="font-weight:600;margin-bottom:12px">家规</div>
+<div style="margin-bottom:8px"><input id="ruleTitle" placeholder="标题" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;font-family:var(--font-sans)"></div>
+<div style="margin-bottom:10px"><textarea id="ruleContent" placeholder="内容" rows="3" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;font-family:var(--font-sans);resize:vertical"></textarea></div>
+<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="Rules.saveRule()" style="flex:1">保存</button><button class="btn btn-outline" onclick="document.getElementById('ruleForm').style.display='none'" style="flex:1">取消</button></div></div>
+</body>
+</html>
