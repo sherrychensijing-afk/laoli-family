@@ -152,6 +152,13 @@ body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-
 <div class="section"><h3 class="section-title">今日待办</h3><div class="todo-list" id="todayTodos"><div class="empty-state">加载中...</div></div></div>
 <div class="section"><h3 class="section-title">猫咪状态</h3><div class="cat-status-card" id="catStatus"><div class="empty-state">加载中...</div></div></div>
 <div class="section"><h3 class="section-title">纪念日</h3><div class="anniversary-list" id="anniversaryList"><div class="empty-state">加载中...</div></div></div>
+<div class="section"><h3 class="section-title">数据同步</h3>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<button class="btn btn-outline" onclick="DataSync.exportData()">导出备份</button>
+<label class="btn btn-outline" style="cursor:pointer">导入恢复<input type="file" accept=".json" onchange="DataSync.importData(this)" style="display:none"></label>
+</div>
+<p style="font-size:11px;color:var(--text-muted);margin-top:6px">导出为JSON文件，可通过微信/AirDrop传到另一台设备导入</p>
+</div>
 </section>
 
 <!-- Schedule -->
@@ -656,6 +663,39 @@ const Photos={
     const db=await this._initDB();
     const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(id);
     tx.oncomplete=()=>{this.render();App.showToast('已删除')};
+  }
+};
+
+// ============ Data Sync ============
+const DataSync={
+  exportData(){
+    const data={
+      schedules:LS.get('laoli_schedules',{completed:[],custom:[]}),
+      rules:LS.get('laoli_rules',[]),
+      messages:LS.get('laoli_messages',[]),
+      exportedAt:new Date().toISOString(),
+      version:'1.0'
+    };
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='laoli-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+    App.showToast('备份已下载');
+  },
+  importData(input){
+    const file=input.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const data=JSON.parse(reader.result);
+        let count=0;
+        if(data.schedules){LS.set('laoli_schedules',data.schedules);count++}
+        if(data.rules){LS.set('laoli_rules',data.rules);count++}
+        if(data.messages){LS.set('laoli_messages',data.messages);count++}
+        Dashboard.render();App.showToast('已导入 '+count+' 类数据，刷新查看');
+      }catch(e){App.showToast('文件格式错误')}
+    };
+    reader.readAsText(file);
+    input.value='';
   }
 };
 
