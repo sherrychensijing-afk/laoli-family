@@ -1,29 +1,28 @@
 #!/bin/bash
-# 老郦家 家庭管理系统 — 启动脚本
-# 使用方法: ./start.sh
+# 老郦家 家庭管理系统 - 一键启动
+cd "$(dirname "$0")"
 
-cd /Users/chensijing/WorkBuddy/2026-06-20-23-15-15
-
-echo "🏠 启动老郦家 家庭管理系统..."
-
-# 检查是否已经在运行
-if lsof -ti:3456 > /dev/null 2>&1; then
-  echo "  → 服务已在运行 (端口 3456)"
-  echo "  → 访问: http://localhost:3456"
-  ./node_modules/.bin/pm2 status
-  exit 0
+# 检查 node_modules
+if [ ! -d "node_modules" ]; then
+  echo "正在安装依赖..."
+  npm install
 fi
+
+echo "启动老郦家管理系统..."
+
+# 停掉旧进程
+lsof -ti:3456 | xargs kill -9 2>/dev/null
 
 # 用 PM2 启动
 ./node_modules/.bin/pm2 start ecosystem.config.js
-sleep 2
 
-if curl -s http://localhost:3456/api/family > /dev/null 2>&1; then
-  echo "✅ 服务启动成功！"
-  echo "   📱 网页: http://localhost:3456"
-  echo "   📊 状态: ./node_modules/.bin/pm2 status"
-  echo "   📋 日志: ./node_modules/.bin/pm2 logs laoli-family"
-  echo "   🛑 停止: ./node_modules/.bin/pm2 stop laoli-family"
-else
-  echo "❌ 启动失败，请检查日志: ./node_modules/.bin/pm2 logs laoli-family"
-fi
+echo "=========================================="
+echo "  老郦家 已启动"
+echo "  本机: http://localhost:3456"
+echo "  状态: ./node_modules/.bin/pm2 status"
+echo "  日志: ./node_modules/.bin/pm2 logs laoli-family"
+echo "=========================================="
+
+# 显示网络地址
+sleep 2
+ifconfig 2>/dev/null | grep "inet " | grep -v 127.0.0.1 | awk '{print "  手机访问: http://"$2":3456"}'

@@ -1,56 +1,38 @@
 /**
- * server.js — 老郦家 家庭管理系统后端
+ * server.js — 老郦家 家庭管理系统
+ * Express 后端 + 全量 API
  */
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+
 const { generateAllSchedules } = require('./lib/scheduler');
 const { formatDate } = require('./lib/holidays');
 const { startScheduler, testSend, loadConfig } = require('./lib/mailer');
 
+// ==================== 基础配置 ====================
 const app = express();
 const PORT = process.env.PORT || 3456;
-
-// 数据目录
 const DATA_DIR = path.join(__dirname, 'data');
 
-// 家庭暗号
-const FAMILY_PASSPHRASE = 'anshinenge';
-
-// 认证中间件 — 保护 /api/* 路由，静态文件放行
-function authMiddleware(req, res, next) {
-  // 静态文件 + 认证接口直接放行
-  if (!req.path.startsWith('/api/') || req.path === '/api/auth') {
-    return next();
-  }
-
-  const token = req.headers['authorization']?.replace('Bearer ', '');
-  if (token === FAMILY_PASSPHRASE) {
-    return next();
-  }
-
-  res.status(401).json({ error: '暗号错误', needAuth: true });
-}
-
-// 应用认证中间件
-app.use(authMiddleware);
-
-// 中间件
+// ==================== 中间件 ====================
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static(__dirname, {
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+}));
 
-// 工具函数：读取 JSON 文件
-function readJSON(filename) {
-  const filePath = path.join(DATA_DIR, filename);
-  if (!fs.existsSync(filePath)) return null;
-  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+// ==================== 工具函数 ====================
+function readJSON(name) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(DATA_DIR, name), 'utf-8'));
+  } catch (_) { return null; }
 }
-
-// 工具函数：写入 JSON 文件
-function writeJSON(filename, data) {
-  const filePath = path.join(DATA_DIR, filename);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+function writeJSON(name, data) {
+  fs.writeFileSync(path.join(DATA_DIR, name), JSON.stringify(data, null, 2), 'utf-8');
 }
 
 // ==================== 首页 ====================
@@ -58,284 +40,213 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ==================== 认证 ====================
-app.post('/api/auth', (req, res) => {
-  const { passphrase } = req.body;
-  if (passphrase === FAMILY_PASSPHRASE) {
-    res.json({ success: true, token: FAMILY_PASSPHRASE });
-  } else {
-    res.status(401).json({ success: false, error: '暗号错误' });
-  }
-});
-
 // ==================== 家庭信息 API ====================
 app.get('/api/family', (req, res) => {
-  const data = readJSON('family.json');
-  res.json(data);
+  res.json(readJSON('family.json') || {});
 });
 
-app.put('/api/family', (req, res) => {
-  const data = readJSON('family.json');
-  const updated = { ...data, ...req.body };
-  writeJSON('family.json', updated);
-  res.json(updated);
+// ==================== 首页 Dashboard API ====================
+app.get('/api/dashboard', (req, res) => {
+  const family = readJSON('family.json') || {};
+  const stored = readJSON('schedules.json') || { completed: [], custom: [] };
+  const feedLog = readJSON('feed-log.json') || {};
+
+  const now = new Date();
+  const today = formatDate(now);
+  
+  // 今日日程（含已完成）
+  const allScheds = generateAllSchedules(stored);
+  const todaySchedules = allScheds.filter(s => s.date === today);
+  
+  // 即将到来（不含今日，最多10条）
+  const upcomingSchedules = allScheds
+    .filter(s => s.date > today && !s.completed)
+    .slice(0, 10);
+
+  // 纪念日
+  const currentYear = now.getFullYear();
+  const anniversaries = (family.members || [])
+    .filter(m => m.birthday)
+    .map(m => {
+      const [bMonth, bDay] = m.birthday.split('-').map(Number);
+      let bDate = new Date(currentYear, bMonth - 1, bDay);
+      if (bDate < now) bDate = new Date(currentYear + 1, bMonth - 1, bDay);
+      const daysUntil = Math.ceil((bDate - now) / 86400000);
+      return {
+        memberId: m.id,
+        name: m.name,
+        birthday: m.birthday,
+        date: formatDate(bDate),
+        daysUntil,
+        nextAge: bDate.getFullYear() === currentYear ? m.age : m.age + 1,
+        emoji: m.type === 'cat' ? '🐱' : (m.name === '郦赟' ? '👨' : '👩'),
+        color: m.color,
+      };
+    })
+    .sort((a, b) => a.daysUntil - b.daysUntil);
+
+  // 猫咪状态
+  const lastFed = feedLog.lastFedFreezeDry || '';
+  const lastWater = feedLog.lastRefillWater || '';
+  const daysSinceFed = lastFed ? Math.floor((now - new Date(lastFed)) / 86400000) : 0;
+  const daysSinceWater = lastWater ? Math.floor((now - new Date(lastWater)) / 86400000) : 0;
+
+  // 下次喂食/加水日期
+  let nextFedDate = new Date(lastFed);
+  nextFedDate.setDate(nextFedDate.getDate() + 2);
+  let nextWaterDate = new Date(lastWater);
+  nextWaterDate.setDate(nextWaterDate.getDate() + 3);
+
+  res.json({
+    today,
+    todaySchedules,
+    upcomingSchedules,
+    anniversaries,
+    catStatus: {
+      lastFedFreezeDry: lastFed,
+      daysSinceFed,
+      nextFed: formatDate(nextFedDate),
+      lastRefillWater: lastWater,
+      daysSinceWater,
+      nextWaterCheck: formatDate(nextWaterDate),
+    },
+    memberCount: family.members?.length || 0,
+  });
 });
 
 // ==================== 日程 API ====================
 app.get('/api/schedules', (req, res) => {
   const stored = readJSON('schedules.json') || { completed: [], custom: [] };
-  const allSchedules = generateAllSchedules(stored);
-  res.json(allSchedules);
+  const allScheds = generateAllSchedules(stored);
+  res.json(allScheds);
 });
 
 app.post('/api/schedules', (req, res) => {
   const stored = readJSON('schedules.json') || { completed: [], custom: [] };
-  const newSchedule = {
-    id: uuidv4(),
-    ...req.body,
+  const entry = {
+    id: `custom-${uuidv4().slice(0, 8)}`,
+    title: req.body.title || '新日程',
+    date: req.body.date || formatDate(new Date()),
+    time: req.body.time || 'evening',
+    person: req.body.person || '',
+    category: req.body.category || 'custom',
+    description: req.body.description || '',
+    repeatRule: req.body.repeatRule || 'none',
     autoGenerated: false,
     createdAt: new Date().toISOString(),
   };
-
-  // 如果是完成操作的特殊处理
-  if (req.body.action === 'complete') {
-    const scheduleId = req.body.id;
-    // 从生成的日程或自定义日程中查找
-    const allGenerated = generateAllSchedules(stored);
-    const target = allGenerated.find(s => s.id === scheduleId);
-
-    if (target) {
-      // 移除之前的完成记录（如果存在）
-      stored.completed = stored.completed.filter(c => c.id !== scheduleId);
-      stored.completed.push({ ...target, completed: true, completedAt: new Date().toISOString() });
-      writeJSON('schedules.json', stored);
-      return res.json({ success: true, schedule: { ...target, completed: true } });
-    }
-    return res.status(404).json({ error: 'Schedule not found' });
-  }
-
-  // 添加自定义日程
-  stored.custom.push(newSchedule);
+  stored.custom.push(entry);
   writeJSON('schedules.json', stored);
-  res.json(newSchedule);
+  res.json(entry);
 });
 
 app.put('/api/schedules/:id', (req, res) => {
   const stored = readJSON('schedules.json') || { completed: [], custom: [] };
   const id = req.params.id;
 
-  // 查找并更新自定义日程
-  const idx = stored.custom.findIndex(s => s.id === id);
+  // 更新自定义日程
+  let idx = stored.custom.findIndex(s => s.id === id);
   if (idx !== -1) {
     stored.custom[idx] = { ...stored.custom[idx], ...req.body, updatedAt: new Date().toISOString() };
     writeJSON('schedules.json', stored);
     return res.json(stored.custom[idx]);
   }
 
-  // 查找并更新已完成日程
-  const cIdx = stored.completed.findIndex(s => s.id === id);
+  // 更新已完成日程
+  let cIdx = stored.completed.findIndex(s => s.id === id);
   if (cIdx !== -1) {
     stored.completed[cIdx] = { ...stored.completed[cIdx], ...req.body, updatedAt: new Date().toISOString() };
     writeJSON('schedules.json', stored);
     return res.json(stored.completed[cIdx]);
   }
 
-  // 如果是自动生成的日程（不在 custom/completed 中），将其转为自定义并保存
-  const allGenerated = generateAllSchedules(stored);
-  const genIdx = allGenerated.findIndex(s => s.id === id);
+  // 自动生成的日程 → 转为自定义保存
+  const allGen = generateAllSchedules(stored);
+  const genIdx = allGen.findIndex(s => s.id === id);
   if (genIdx !== -1) {
-    // 从已完成列表中移除（如果有冲突的完成记录）
     stored.completed = stored.completed.filter(c => c.id !== id);
-    const newCustom = { ...allGenerated[genIdx], ...req.body, autoGenerated: false, updatedAt: new Date().toISOString() };
+    const newCustom = { ...allGen[genIdx], ...req.body, autoGenerated: false, updatedAt: new Date().toISOString() };
     stored.custom.push(newCustom);
     writeJSON('schedules.json', stored);
     return res.json(newCustom);
   }
 
-  res.status(404).json({ error: 'Schedule not found' });
+  res.status(404).json({ error: '未找到该日程' });
 });
 
-app.delete('/api/schedules/:id', (req, res) => {
-  const stored = readJSON('schedules.json') || { completed: [], custom: [] };
-  const id = req.params.id;
-
-  stored.custom = stored.custom.filter(s => s.id !== id);
-  stored.completed = stored.completed.filter(s => s.id !== id);
-  writeJSON('schedules.json', stored);
-  res.json({ success: true });
-});
-
+// 标记完成
 app.post('/api/schedules/:id/complete', (req, res) => {
   const stored = readJSON('schedules.json') || { completed: [], custom: [] };
   const id = req.params.id;
 
-  // 从所有可能的来源查找日程
-  const allGenerated = generateAllSchedules(stored);
-  const target = allGenerated.find(s => s.id === id);
-
+  // 从自定义中找
+  const target = [...(stored.custom || [])].find(s => s.id === id);
   if (target) {
-    stored.completed = stored.completed.filter(c => c.id !== id);
     stored.completed.push({ ...target, completed: true, completedAt: new Date().toISOString() });
     writeJSON('schedules.json', stored);
     return res.json({ success: true, schedule: { ...target, completed: true } });
   }
+  
+  // 从自动生成中找（用 scheduler 重建）
+  const allGen = generateAllSchedules(stored);
+  const genTarget = allGen.find(s => s.id === id);
+  if (genTarget) {
+    stored.completed.push({ ...genTarget, completed: true, completedAt: new Date().toISOString() });
+    writeJSON('schedules.json', stored);
+    return res.json({ success: true, schedule: { ...genTarget, completed: true } });
+  }
 
-  res.status(404).json({ error: 'Schedule not found' });
+  res.status(404).json({ error: '未找到该日程' });
+});
+
+// 取消完成
+app.post('/api/schedules/:id/uncomplete', (req, res) => {
+  const stored = readJSON('schedules.json') || { completed: [], custom: [] };
+  stored.completed = (stored.completed || []).filter(c => c.id !== req.params.id);
+  writeJSON('schedules.json', stored);
+  res.json({ success: true });
+});
+
+// 删除自定义日程
+app.delete('/api/schedules/:id', (req, res) => {
+  let stored = readJSON('schedules.json') || { completed: [], custom: [] };
+  stored.custom = (stored.custom || []).filter(s => s.id !== req.params.id);
+  writeJSON('schedules.json', stored);
+  res.json({ success: true });
 });
 
 // ==================== 家规 API ====================
 app.get('/api/rules', (req, res) => {
-  const rules = readJSON('rules.json') || [];
-  res.json(rules);
+  res.json(readJSON('rules.json') || []);
 });
 
 app.post('/api/rules', (req, res) => {
   const rules = readJSON('rules.json') || [];
-  const newRule = {
+  const rule = {
     id: `rule-${uuidv4().slice(0, 8)}`,
-    title: req.body.title || '新规则',
+    title: req.body.title || '新家规',
     content: req.body.content || '',
-    order: rules.length + 1,
     createdAt: new Date().toISOString(),
   };
-  rules.push(newRule);
+  rules.push(rule);
   writeJSON('rules.json', rules);
-  res.json(newRule);
+  res.json(rule);
 });
 
 app.put('/api/rules/:id', (req, res) => {
   const rules = readJSON('rules.json') || [];
-  const id = req.params.id;
-  const idx = rules.findIndex(r => r.id === id);
-  if (idx !== -1) {
-    rules[idx] = { ...rules[idx], ...req.body, updatedAt: new Date().toISOString() };
-    writeJSON('rules.json', rules);
-    return res.json(rules[idx]);
-  }
-  res.status(404).json({ error: 'Rule not found' });
+  const idx = rules.findIndex(r => r.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: '未找到该家规' });
+  rules[idx] = { ...rules[idx], ...req.body, updatedAt: new Date().toISOString() };
+  writeJSON('rules.json', rules);
+  res.json(rules[idx]);
 });
 
 app.delete('/api/rules/:id', (req, res) => {
   let rules = readJSON('rules.json') || [];
-  const id = req.params.id;
-  rules = rules.filter(r => r.id !== id);
-  // 重新排序
-  rules.forEach((r, i) => { r.order = i + 1; });
+  rules = rules.filter(r => r.id !== req.params.id);
   writeJSON('rules.json', rules);
   res.json({ success: true });
-});
-
-// ==================== 首页面板 API ====================
-app.get('/api/dashboard', (req, res) => {
-  const today = formatDate(new Date());
-  const family = readJSON('family.json');
-  const stored = readJSON('schedules.json') || { completed: [], custom: [] };
-  const allSchedules = generateAllSchedules(stored);
-
-  // 今日待办
-  const todaySchedules = allSchedules.filter(s => s.date === today && !s.completed);
-
-  // 最近待办（未来7天）
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 7);
-  const weekEnd = formatDate(tomorrow);
-  const upcomingSchedules = allSchedules.filter(
-    s => s.date >= today && s.date <= weekEnd && !s.completed
-  ).slice(0, 10);
-
-  // 猫咪状态
-  const lastFed = family?.meta?.lastFedFreezeDry || '2026-06-20';
-  const lastWater = family?.meta?.lastRefillWater || '2026-06-19';
-  const daysSinceFed = Math.floor((new Date(today) - new Date(lastFed)) / (1000 * 60 * 60 * 24));
-  const daysSinceWater = Math.floor((new Date(today) - new Date(lastWater)) / (1000 * 60 * 60 * 24));
-
-  res.json({
-    today,
-    todaySchedules,
-    upcomingSchedules,
-    catStatus: {
-      lastFedFreezeDry: lastFed,
-      lastRefillWater: lastWater,
-      daysSinceFed,
-      daysSinceWater,
-      nextFed: daysSinceFed >= 2 ? '今天' : `${2 - daysSinceFed}天后`,
-      nextWaterCheck: daysSinceWater >= 3 ? '今天' : `${3 - daysSinceWater}天后`,
-    },
-    memberCount: family?.members?.length || 0,
-  });
-});
-
-// ==================== 喂食记录 API ====================
-app.post('/api/feed-log', (req, res) => {
-  const logs = readJSON('feed-log.json') || [];
-  const entry = {
-    id: uuidv4(),
-    type: req.body.type || 'feeding', // 'feeding' | 'water'
-    date: req.body.date || formatDate(new Date()),
-    timestamp: new Date().toISOString(),
-    note: req.body.note || '',
-  };
-  logs.unshift(entry);
-  writeJSON('feed-log.json', logs);
-
-  // 更新 lastFed/lastRefill 日期
-  const family = readJSON('family.json');
-  if (entry.type === 'feeding') {
-    family.meta.lastFedFreezeDry = entry.date;
-  } else if (entry.type === 'water') {
-    family.meta.lastRefillWater = entry.date;
-  }
-  writeJSON('family.json', family);
-
-  res.json(entry);
-});
-
-app.get('/api/feed-log', (req, res) => {
-  const logs = readJSON('feed-log.json') || [];
-  const limit = parseInt(req.query.limit) || 20;
-  res.json(logs.slice(0, limit));
-});
-
-// ==================== 邮件配置 API ====================
-app.get('/api/email-config', (req, res) => {
-  const cfg = loadConfig();
-  // 不返回密码
-  const safe = {
-    enabled: cfg.enabled,
-    recipient: cfg.recipient,
-    schedule: cfg.schedule,
-    hasAuth: !!(cfg.smtp?.auth?.user && cfg.smtp?.auth?.pass),
-    smtpUser: cfg.smtp?.auth?.user || '',
-  };
-  res.json(safe);
-});
-
-app.put('/api/email-config', (req, res) => {
-  const current = loadConfig();
-  const updated = {
-    ...current,
-    enabled: req.body.enabled !== undefined ? req.body.enabled : current.enabled,
-    recipient: req.body.recipient || current.recipient,
-    schedule: req.body.schedule || current.schedule,
-    smtp: {
-      ...current.smtp,
-      auth: {
-        user: req.body.smtpUser || current.smtp.auth.user,
-        pass: req.body.smtpPass || current.smtp.auth.pass,
-      },
-    },
-  };
-  fs.writeFileSync(path.join(DATA_DIR, 'email-config.json'), JSON.stringify(updated, null, 2), 'utf-8');
-  res.json({ success: true, message: '邮件配置已保存，需重启服务生效定时任务' });
-});
-
-app.post('/api/email-config/test', async (req, res) => {
-  try {
-    await testSend();
-    res.json({ success: true, message: '测试邮件发送成功' });
-  } catch (e) {
-    res.json({ success: false, message: '发送失败: ' + e.message });
-  }
 });
 
 // ==================== 留言板 API ====================
@@ -347,21 +258,22 @@ app.get('/api/messages', (req, res) => {
 
 app.post('/api/messages', (req, res) => {
   const messages = readJSON('messages.json') || [];
-  const newMsg = {
+  const msg = {
     id: `msg-${uuidv4().slice(0, 8)}`,
     content: req.body.content || '',
     createdAt: new Date().toISOString(),
     replies: [],
   };
-  messages.push(newMsg);
+  messages.push(msg);
   writeJSON('messages.json', messages);
-  res.json(newMsg);
+  res.json(msg);
 });
 
 app.post('/api/messages/:id/reply', (req, res) => {
   const messages = readJSON('messages.json') || [];
   const msg = messages.find(m => m.id === req.params.id);
-  if (!msg) return res.status(404).json({ error: 'Message not found' });
+  if (!msg) return res.status(404).json({ error: '未找到该留言' });
+
   const reply = {
     id: `reply-${uuidv4().slice(0, 8)}`,
     content: req.body.content || '',
@@ -379,6 +291,108 @@ app.delete('/api/messages/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// ==================== 相册 API ====================
+if (!fs.existsSync(path.join(DATA_DIR, 'photos.json'))) {
+  writeJSON('photos.json', []);
+}
+
+const photoStorage = multer.diskStorage({
+  destination: path.join(DATA_DIR, 'photos'),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `${uuidv4()}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage: photoStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic'];
+    if (allowed.includes(path.extname(file.originalname).toLowerCase())) cb(null, true);
+    else cb(new Error('不支持的图片格式'));
+  },
+});
+
+app.get('/api/photos', (req, res) => {
+  const photos = readJSON('photos.json') || [];
+  photos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  res.json(photos);
+});
+
+app.post('/api/photos', upload.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: '请选择图片' });
+
+  const photos = readJSON('photos.json') || [];
+  const entry = {
+    id: `photo-${uuidv4().slice(0, 8)}`,
+    filename: req.file.filename,
+    originalName: req.file.originalname,
+    caption: req.body.caption || '',
+    tag: req.body.tag || 'family',
+    createdAt: new Date().toISOString(),
+    size: req.file.size,
+  };
+  photos.push(entry);
+  writeJSON('photos.json', photos);
+  res.json(entry);
+});
+
+app.delete('/api/photos/:id', (req, res) => {
+  let photos = readJSON('photos.json') || [];
+  const p = photos.find(p => p.id === req.params.id);
+  if (p) {
+    const fp = path.join(DATA_DIR, 'photos', p.filename);
+    if (fs.existsSync(fp)) fs.unlinkSync(fp);
+  }
+  photos = photos.filter(p => p.id !== req.params.id);
+  writeJSON('photos.json', photos);
+  res.json({ success: true });
+});
+
+app.use('/photos', express.static(path.join(DATA_DIR, 'photos')));
+
+// ==================== 邮件配置 API ====================
+app.get('/api/email-config', (req, res) => {
+  const cfg = loadConfig();
+  res.json({
+    enabled: cfg.enabled,
+    recipient: cfg.recipient,
+    schedule: cfg.schedule,
+    hasAuth: !!(cfg.smtp?.auth?.pass),
+    smtpUser: cfg.smtp?.auth.user || '',
+  });
+});
+
+app.put('/api/email-config', (req, res) => {
+  const cur = loadConfig();
+  const updated = {
+    ...cur,
+    enabled: req.body.enabled !== undefined ? req.body.enabled : cur.enabled,
+    recipient: req.body.recipient || cur.recipient,
+    schedule: req.body.schedule || cur.schedule,
+    smtp: {
+      ...(cur.smtp || {}),
+      auth: {
+        user: req.body.smtpUser || (cur.smtp?.auth?.user || ''),
+        pass: req.body.smtpPass || (cur.smtp?.auth?.pass || ''),
+      },
+    },
+  };
+  writeJSON('email-config.json', updated);
+  emailConfig = updated;
+  res.json({ success: true, message: '邮件配置已保存，重启服务后定时任务生效' });
+});
+
+app.post('/api/email-config/test', async (req, res) => {
+  try {
+    await testSend();
+    res.json({ success: true, message: '测试邮件发送成功' });
+  } catch (e) {
+    res.json({ success: false, message: '发送失败: ' + e.message });
+  }
+});
+
 // ==================== 启动服务 ====================
 app.listen(PORT, () => {
   const os = require('os');
@@ -390,11 +404,9 @@ app.listen(PORT, () => {
     });
   });
 
-  console.log(`🏠 老郦家 家庭管理系统已启动`);
-  console.log(`   本机访问: http://localhost:${PORT}`);
-  ips.forEach(ip => console.log(`   手机访问: http://${ip}:${PORT}`));
-  console.log(`   API 地址: http://localhost:${PORT}/api`);
+  console.log(`[老郦家] 服务已启动 (GLM版 v2.0)`);
+  console.log(`   本机: http://localhost:${PORT}`);
+  ips.forEach(ip => console.log(`   手机: http://${ip}:${PORT}`));
 
-  // 启动邮件定时任务
   startScheduler();
 });

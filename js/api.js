@@ -1,48 +1,21 @@
 /**
- * js/api.js — API 请求封装（带暗号认证）
+ * js/api.js — API 封装
  */
 const API = {
-  _token: null,
+  get(url) { return fetch(url).then(r => r.ok ? r.json() : Promise.reject('GET ' + url + ': ' + r.status)); },
 
-  setToken(token) {
-    this._token = token;
+  post(url, data) {
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      .then(r => r.ok ? r.json() : Promise.reject('POST ' + url + ': ' + r.status));
   },
 
-  _headers() {
-    const h = { 'Content-Type': 'application/json' };
-    if (this._token) h['Authorization'] = `Bearer ${this._token}`;
-    return h;
+  put(url, data) {
+    return fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      .then(r => r.ok ? r.json() : Promise.reject('PUT ' + url + ': ' + r.status));
   },
 
-  async get(url) {
-    const res = await fetch(url, { headers: this._headers() });
-    if (!res.ok) throw new Error(`GET ${url} failed: ${res.status}`);
-    return res.json();
-  },
-
-  async post(url, data) {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: this._headers(),
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error(`POST ${url} failed: ${res.status}`);
-    return res.json();
-  },
-
-  async put(url, data) {
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: this._headers(),
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error(`PUT ${url} failed: ${res.status}`);
-    return res.json();
-  },
-
-  async del(url) {
-    const res = await fetch(url, { method: 'DELETE', headers: this._headers() });
-    if (!res.ok) throw new Error(`DELETE ${url} failed: ${res.status}`);
-    return res.json();
+  del(url) {
+    return fetch(url, { method: 'DELETE' })
+      .then(r => r.ok ? r.json() : Promise.reject('DELETE ' + url + ': ' + r.status));
   },
 };

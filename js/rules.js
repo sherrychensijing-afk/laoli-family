@@ -1,112 +1,75 @@
 /**
- * js/rules.js — 郦家家规
+ * js/rules.js — 郦家家规管理
  */
 const Rules = {
-  editMode: false,
-  rules: [],
-
   async render() {
-    try {
-      this.rules = await API.get('/api/rules');
-      this.renderList();
-    } catch (e) {
-      document.getElementById('rulesList').innerHTML =
-        '<div class="empty-state">加载家规失败，请检查服务是否启动</div>';
-    }
+    try { const list = await API.get('/api/rules'); this.drawList(list); }
+    catch(e) { console.error(e); document.getElementById('rulesList').innerHTML = '<div class="empty-state">加载失败</div>'; }
   },
 
-  renderList() {
-    const container = document.getElementById('rulesList');
-    if (!this.rules || this.rules.length === 0) {
-      container.innerHTML = '<div class="empty-state">还没有家规，点击上方按钮添加</div>';
-      return;
-    }
+  drawList(rules) {
+    const el = document.getElementById('rulesList');
+    if (!rules.length) { el.innerHTML = '<div class="empty-state">暂无家规</div>'; return; }
 
-    container.innerHTML = this.rules.map(r => `
-      <div class="rule-card" data-rid="${r.id}">
-        <div class="rule-card-header">
-          <div class="rule-number">${r.order}</div>
-          <h4>${r.title}</h4>
-          ${this.editMode ? `
-          <div class="rule-actions-inline">
-            <button class="btn btn-outline" onclick="Rules.editRule('${r.id}')">编辑</button>
-            <button class="btn btn-danger" onclick="Rules.deleteRule('${r.id}')">删除</button>
-          </div>` : ''}
-        </div>
-        <div class="rule-content">${r.content}</div>
-      </div>
-    `).join('');
+    el.innerHTML = rules.map((r, i) =>
+      '<div class="rule-card">' +
+        '<div class="rule-card-header"><span class="rule-number">' + (i+1) + '</span>' +
+        '<h4>' + r.title + '</h4></div>' +
+        '<div class="rule-content">' + r.content + '</div>' +
+        '<div class="rule-actions"><button class="btn btn-outline btn-sm" onclick="Rules.editRule(\'' + r.id + '\',\'' + (r.title||'').replace(/'/g,"\\'") + '\',\'' + (r.content||'').replace(/'/g,"\\'") + '\')">编辑</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="Rules.deleteRule(\'' + r.id + '\')">删除</button></div></div>'
+    ).join('');
   },
 
-  toggleEditMode() {
-    this.editMode = !this.editMode;
-    const btn = document.getElementById('btnEditRules');
-    if (this.editMode) {
-      btn.innerHTML = '👁️ 查看模式';
-      btn.dataset.mode = 'edit';
-    } else {
-      btn.innerHTML = '✏️ 编辑模式';
-      btn.dataset.mode = 'view';
-    }
-    this.renderList();
-  },
-
-  showAddModal() {
-    document.getElementById('ruleModalTitle').textContent = '添加规则';
+  showAddForm() {
     document.getElementById('ruleTitle').value = '';
     document.getElementById('ruleContent').value = '';
-    document.getElementById('ruleEditId').value = '';
-    document.getElementById('ruleModal').classList.add('show');
-    document.getElementById('ruleTitle').focus();
+    document.getElementById('ruleForm').style.display = 'block';
   },
 
-  hideModal() {
-    document.getElementById('ruleModal').classList.remove('show');
-  },
-
-  editRule(id) {
-    const rule = this.rules.find(r => r.id === id);
-    if (!rule) return;
-    document.getElementById('ruleModalTitle').textContent = '编辑规则';
-    document.getElementById('ruleTitle').value = rule.title;
-    document.getElementById('ruleContent').value = rule.content;
-    document.getElementById('ruleEditId').value = id;
-    document.getElementById('ruleModal').classList.add('show');
-  },
+  hideForm() { document.getElementById('ruleForm').style.display = 'none'; },
 
   async saveRule() {
     const title = document.getElementById('ruleTitle').value.trim();
     const content = document.getElementById('ruleContent').value.trim();
-    const editId = document.getElementById('ruleEditId').value;
-
-    if (!title || !content) {
-      App.showToast('请填写标题和内容');
-      return;
-    }
+    if (!title || !content) { App.showToast('请填写完整'); return; }
 
     try {
-      if (editId) {
-        await API.put(`/api/rules/${editId}`, { title, content });
-      } else {
-        await API.post('/api/rules', { title, content });
-      }
-      this.hideModal();
-      await this.render();
-      App.showToast(editId ? '规则已更新 ✓' : '规则已添加 ✓');
-    } catch (e) {
-      console.error('Save rule failed:', e);
-      App.showToast('保存失败，请重试');
-    }
+      await API.post('/api/rules', { title, content });
+      this.hideForm(); await this.render(); App.showToast('已保存');
+    } catch(e) { console.error(e); }
+  },
+
+  editRule(id, oldTitle, oldContent) {
+    document.getElementById('ruleTitle').value = oldTitle;
+    document.getElementById('ruleContent').value = oldContent;
+    document.getElementById('ruleForm').style.display = 'block';
+
+    // 替换 save 为 update
+    const btn = document.querySelector('#ruleForm .btn-primary');
+    btn.textContent = '更新';
+    btn.setAttribute('onclick', "Rules.updateRule('" + id + "')");
+  },
+
+  async updateRule(id) {
+    const title = document.getElementById('ruleTitle').value.trim();
+    const content = document.getElementById('ruleContent').value.trim();
+    if (!title || !content) return;
+
+    try {
+      await API.put('/api/rules/' + id, { title, content });
+      this.hideForm();
+      // 恢复按钮
+      const btn = document.querySelector('#ruleForm .btn-primary');
+      btn.textContent = '保存';
+      btn.setAttribute('onclick', 'Rules.saveRule()');
+      await this.render(); App.showToast('已更新');
+    } catch(e) { console.error(e); }
   },
 
   async deleteRule(id) {
-    if (!confirm('确定要删除这条家规吗？')) return;
-    try {
-      await API.del(`/api/rules/${id}`);
-      await this.render();
-      App.showToast('规则已删除');
-    } catch (e) {
-      console.error('Delete rule failed:', e);
-    }
+    if (!confirm('确定删除这条家规？')) return;
+    try { await API.del('/api/rules/' + id); await this.render(); App.showToast('已删除'); }
+    catch(e) { console.error(e); }
   },
 };
