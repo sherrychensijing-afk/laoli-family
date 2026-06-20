@@ -13,6 +13,26 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+  <!-- 暗号验证门 -->
+  <div class="gate-overlay" id="gateOverlay">
+    <div class="gate-card">
+      <div class="gate-icon">🏠</div>
+      <h2 class="gate-title">老郦家</h2>
+      <p class="gate-hint">请输入家庭暗号</p>
+      <div class="gate-input-row">
+        <input type="text" id="gatePassphrase"
+               placeholder="请输入暗号"
+               maxlength="20"
+               autocomplete="off"
+               onkeydown="if(event.key==='Enter')Gate.submit()">
+        <button class="btn btn-primary" onclick="Gate.submit()">进入</button>
+      </div>
+      <p class="gate-error" id="gateError"></p>
+    </div>
+  </div>
+
+  <!-- 主应用（验证后显示） -->
+  <div id="appMain" style="display:none">
   <!-- 顶部导航 -->
   <header class="header">
     <div class="header-inner">
@@ -250,6 +270,54 @@
 
   <!-- Toast 提示 -->
   <div class="toast" id="toast"></div>
+
+  </div><!-- /appMain -->
+
+  <!-- Gate 验证逻辑 -->
+  <script>
+    const Gate = {
+      PASSPHRASE: 'anshinenge',
+      init() {
+        const token = sessionStorage.getItem('laoli_token');
+        if (token) {
+          API.setToken(token);
+          this.unlock();
+        }
+      },
+      async submit() {
+        const input = document.getElementById('gatePassphrase').value.trim();
+        try {
+          const resp = await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ passphrase: input }),
+          });
+          const data = await resp.json();
+          if (data.success) {
+            sessionStorage.setItem('laoli_token', data.token);
+            API.setToken(data.token);
+            this.unlock();
+          } else {
+            this.showError();
+          }
+        } catch (e) {
+          this.showError();
+        }
+      },
+      showError() {
+        document.getElementById('gateError').textContent = '暗号不对，再想想 🤔';
+        document.getElementById('gatePassphrase').value = '';
+        document.getElementById('gatePassphrase').focus();
+        document.getElementById('gatePassphrase').classList.add('shake');
+        setTimeout(() => document.getElementById('gatePassphrase').classList.remove('shake'), 400);
+      },
+      unlock() {
+        document.getElementById('gateOverlay').style.display = 'none';
+        document.getElementById('appMain').style.display = 'block';
+      }
+    };
+    Gate.init();
+  </script>
 
   <script src="/js/api.js"></script>
   <script src="/js/dashboard.js"></script>

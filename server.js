@@ -15,6 +15,27 @@ const PORT = process.env.PORT || 3456;
 // 数据目录
 const DATA_DIR = path.join(__dirname, 'data');
 
+// 家庭暗号
+const FAMILY_PASSPHRASE = 'anshinenge';
+
+// 认证中间件 — 保护 /api/* 路由，静态文件放行
+function authMiddleware(req, res, next) {
+  // 静态文件 + 认证接口直接放行
+  if (!req.path.startsWith('/api/') || req.path === '/api/auth') {
+    return next();
+  }
+
+  const token = req.headers['authorization']?.replace('Bearer ', '');
+  if (token === FAMILY_PASSPHRASE) {
+    return next();
+  }
+
+  res.status(401).json({ error: '暗号错误', needAuth: true });
+}
+
+// 应用认证中间件
+app.use(authMiddleware);
+
 // 中间件
 app.use(express.json());
 app.use(express.static(__dirname));
@@ -35,6 +56,16 @@ function writeJSON(filename, data) {
 // ==================== 首页 ====================
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// ==================== 认证 ====================
+app.post('/api/auth', (req, res) => {
+  const { passphrase } = req.body;
+  if (passphrase === FAMILY_PASSPHRASE) {
+    res.json({ success: true, token: FAMILY_PASSPHRASE });
+  } else {
+    res.status(401).json({ success: false, error: '暗号错误' });
+  }
 });
 
 // ==================== 家庭信息 API ====================
