@@ -1,0 +1,14 @@
+{
+  "familyName": "老郦家",
+  "address": "北京顺义区誉天下123号楼3单元302",
+  "members": [
+    { "id": "liyun", "name": "郦赟", "role": "正家主", "gender": "男", "age": 32, "type": "human", "color": "#E8913A" },
+    { "id": "chensijing", "name": "陈思婧", "role": "副家主", "gender": "女", "age": 31, "type": "human", "color": "#E874A5" },
+    { "id": "lumi", "name": "LUMI", "role": "成员", "gender": "母", "age": 7, "type": "cat", "color": "#7B9EBD", "breed": "母猫" },
+    { "id": "didi", "name": "弟弟", "role": "成员", "gender": "公", "age": 6, "type": "cat", "color": "#8BA888", "breed": "公猫" }
+  ],
+  "meta": {
+    "lastFedFreezeDry": "2026-06-20",
+    "lastRefillWater": "2026-06-19"
+  }
+}

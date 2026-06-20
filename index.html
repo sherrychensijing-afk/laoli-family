@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>老郦家 - 家庭管理系统</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#E8913A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="老郦家">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🏠</span>
+        <h1 class="logo-text">老郦家</h1>
+      </div>
+      <nav class="nav-tabs" id="navTabs">
+        <button class="nav-tab active" data-tab="dashboard">
+          <span class="tab-icon">📋</span> 首页
+        </button>
+        <button class="nav-tab" data-tab="schedule">
+          <span class="tab-icon">📅</span> 日程提醒
+        </button>
+        <button class="nav-tab" data-tab="rules">
+          <span class="tab-icon">📜</span> 郦家家规
+        </button>
+        <button class="nav-tab" data-tab="messages">
+          <span class="tab-icon">💬</span> 留言板
+        </button>
+      </nav>
+      <div class="header-address" id="headerAddress">
+        北京顺义区誉天下
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="main-content">
+
+    <!-- ==================== Tab 1: 首页概览 ==================== -->
+    <section class="tab-content active" id="tab-dashboard">
+      <!-- 欢迎横幅 -->
+      <div class="welcome-banner">
+        <div class="welcome-text">
+          <h2 id="greetingText">晚上好</h2>
+          <p id="todayDate">2026年6月20日 星期六</p>
+        </div>
+        <div class="welcome-mascot">🐷</div>
+      </div>
+
+      <!-- 家庭成员卡片 -->
+      <div class="section">
+        <h3 class="section-title">👨‍👩‍👧‍👦 家庭成员</h3>
+        <div class="member-cards" id="memberCards">
+          <!-- JS 动态渲染 -->
+        </div>
+      </div>
+
+      <!-- 今日待办 -->
+      <div class="section">
+        <h3 class="section-title">📌 今日待办</h3>
+        <div class="todo-list" id="todayTodos">
+          <div class="empty-state">加载中...</div>
+        </div>
+      </div>
+
+      <!-- 猫咪状态 -->
+      <div class="section">
+        <h3 class="section-title">🐱 猫咪状态</h3>
+        <div class="cat-status-card" id="catStatus">
+          <div class="empty-state">加载中...</div>
+        </div>
+      </div>
+
+      <!-- 邮件提醒设置 -->
+      <div class="section">
+        <h3 class="section-title" style="cursor:pointer" onclick="document.getElementById('emailSettings').classList.toggle('collapsed')">
+          📧 每日邮件提醒 <span style="font-size:12px;color:var(--text-muted);font-weight:400;">（点击展开设置）</span>
+        </h3>
+        <div class="email-settings collapsed" id="emailSettings">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+            每天 0:00 自动发送当日日程汇总到指定邮箱（需 QQ邮箱 SMTP 授权码）
+          </p>
+          <div class="form-group">
+            <label>启用邮件提醒</label>
+            <select id="emailEnabled" onchange="Dashboard.toggleEmailConfig()">
+              <option value="false">关闭</option>
+              <option value="true">开启</option>
+            </select>
+          </div>
+          <div id="emailAuthFields">
+            <div class="form-group">
+              <label>发件邮箱（QQ邮箱）</label>
+              <input type="text" id="emailUser" placeholder="your-qq@qq.com">
+            </div>
+            <div class="form-group">
+              <label>QQ邮箱授权码</label>
+              <input type="password" id="emailPass" placeholder="在QQ邮箱设置中生成">
+              <span style="font-size:11px;color:var(--text-muted);">
+                获取方式：QQ邮箱 → 设置 → 账户 → POP3/SMTP服务 → 生成授权码
+              </span>
+            </div>
+            <div class="form-group">
+              <label>收件邮箱</label>
+              <input type="text" id="emailRecipient" value="837806718@qq.com" placeholder="837806718@qq.com">
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-primary" onclick="Dashboard.saveEmailConfig()">💾 保存配置</button>
+              <button class="btn btn-outline" onclick="Dashboard.testEmail()">📨 发送测试邮件</button>
+            </div>
+          </div>
+          <div id="emailStatus" style="margin-top:10px;font-size:13px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Tab 2: 日程提醒 ==================== -->
+    <section class="tab-content" id="tab-schedule">
+      <!-- 顶栏：分类筛选 + 添加按钮 -->
+      <div class="schedule-toolbar">
+        <div class="filter-chips" id="filterChips">
+          <button class="chip active" data-filter="all">全部</button>
+          <button class="chip" data-filter="travel">✈️ 出行</button>
+          <button class="chip" data-filter="pet">🐱 猫咪</button>
+          <button class="chip" data-filter="intimacy">❤️ 亲密</button>
+          <button class="chip" data-filter="family">🏡 家庭活动</button>
+          <button class="chip" data-filter="custom">📝 自定义</button>
+        </div>
+        <button class="btn btn-primary" id="btnAddSchedule">+ 添加日程</button>
+      </div>
+
+      <!-- 日程列表 -->
+      <div class="schedule-list" id="scheduleList">
+        <div class="empty-state">加载中...</div>
+      </div>
+
+      <!-- 添加日程弹窗 -->
+      <div class="modal-overlay" id="addScheduleModal">
+        <div class="modal">
+          <div class="modal-header">
+            <h4>添加新日程</h4>
+            <button class="modal-close" id="btnCloseModal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>日程标题</label>
+              <input type="text" id="newTitle" placeholder="例如：家庭聚餐">
+            </div>
+            <div class="form-group">
+              <label>日期</label>
+              <input type="date" id="newDate">
+            </div>
+            <div class="form-group">
+              <label>时间</label>
+              <select id="newTime">
+                <option value="morning">上午</option>
+                <option value="afternoon">下午</option>
+                <option value="evening">晚上</option>
+                <option value="bedtime">睡前</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>相关人员</label>
+              <input type="text" id="newPerson" placeholder="例如：郦赟">
+            </div>
+            <div class="form-group">
+              <label>分类</label>
+              <select id="newCategory">
+                <option value="custom">📝 自定义</option>
+                <option value="travel">✈️ 出行</option>
+                <option value="pet">🐱 猫咪</option>
+                <option value="intimacy">❤️ 亲密</option>
+                <option value="family">🏡 家庭活动</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>描述（可选）</label>
+              <textarea id="newDesc" rows="2" placeholder="补充说明..."></textarea>
+            </div>
+            <button class="btn btn-primary btn-full" id="btnSaveSchedule">保存日程</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Tab 3: 郦家家规 ==================== -->
+    <section class="tab-content" id="tab-rules">
+      <div class="rules-header">
+        <h2 class="rules-title">📜 郦家家规</h2>
+        <p class="rules-subtitle">基于客观道理，互相尊重，持续完善</p>
+        <div class="rules-actions">
+          <button class="btn btn-primary" id="btnAddRule">+ 添加规则</button>
+          <button class="btn btn-outline" id="btnEditRules" data-mode="view">✏️ 编辑模式</button>
+        </div>
+      </div>
+      <div class="rules-list" id="rulesList">
+        <div class="empty-state">加载中...</div>
+      </div>
+
+      <!-- 添加/编辑规则弹窗 -->
+      <div class="modal-overlay" id="ruleModal">
+        <div class="modal">
+          <div class="modal-header">
+            <h4 id="ruleModalTitle">添加规则</h4>
+            <button class="modal-close" id="btnCloseRuleModal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>规则标题</label>
+              <input type="text" id="ruleTitle" placeholder="例如：坦诚沟通">
+            </div>
+            <div class="form-group">
+              <label>规则内容</label>
+              <textarea id="ruleContent" rows="4" placeholder="详细说明..."></textarea>
+            </div>
+            <input type="hidden" id="ruleEditId">
+            <button class="btn btn-primary btn-full" id="btnSaveRule">保存规则</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Tab 4: 留言板 ==================== -->
+    <section class="tab-content" id="tab-messages">
+      <div class="messages-header">
+        <h2 class="messages-title">💬 家庭留言板</h2>
+        <p class="messages-subtitle">匿名发言，畅所欲言 —— 对家庭的意见、感谢、吐槽，都可以在这里说</p>
+      </div>
+
+      <!-- 发帖区 -->
+      <div class="message-composer">
+        <div class="composer-hint">🕶️ 匿名模式 · 你的身份不会被显示</div>
+        <textarea id="msgContent" rows="3" placeholder="想说点什么..."></textarea>
+        <button class="btn btn-primary" id="btnPostMessage" onclick="Messages.postMessage()">📨 匿名发送</button>
+      </div>
+
+      <!-- 留言列表 -->
+      <div class="messages-list" id="messagesList">
+        <div class="empty-state">加载中...</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast 提示 -->
+  <div class="toast" id="toast"></div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/dashboard.js"></script>
+  <script src="/js/schedule.js"></script>
+  <script src="/js/rules.js"></script>
+  <script src="/js/messages.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    // 注册 Service Worker (PWA)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(() => {
+        console.log('PWA Service Worker 已注册');
+      }).catch(() => {});
+    }
+  </script>
+</body>
+</html>

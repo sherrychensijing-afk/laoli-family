@@ -1,0 +1,15 @@
+{
+  "name": "laoli-family",
+  "version": "1.0.0",
+  "description": "老郦家 - 家庭管理系统",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "node-cron": "^4.4.1",
+    "nodemailer": "^9.0.1",
+    "uuid": "^10.0.0"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "smtp": {
+    "host": "smtp.qq.com",
+    "port": 465,
+    "secure": true,
+    "auth": {
+      "user": "875402983@qq.com",
+      "pass": "ihhtntjjnwyjbahj"
+    }
+  },
+  "recipient": "837806718@qq.com",
+  "schedule": "0 0 * * *"
+}
