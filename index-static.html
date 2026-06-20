@@ -382,7 +382,7 @@ function getAnniversaries(){
     let bDate=new Date(yr,bM-1,bD);
     if(bDate<now) bDate=new Date(yr+1,bM-1,bD);
     const daysUntil=Math.ceil((bDate-now)/(1000*60*60*24));
-    const nextAge=daysUntil>365?m.age:m.age+1; // simplified
+    const nextAge=bDate.getFullYear()===yr?m.age:m.age+1;
     return {memberId:m.id,name:m.name,birthday:m.birthday,
       date:dateStr(bDate),daysUntil,nextAge,emoji:m.type==='cat'?'🐱':(m.name==='郦赟'?'👨':'👩'),color:m.color};
   }).sort((a,b)=>a.daysUntil-b.daysUntil);
